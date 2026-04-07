@@ -6,7 +6,7 @@ on:
     - cron: '15 10 * * *'  # 10:30am EST (3:30pm UTC)
     - cron: '15 14 * * *'  # 2:30pm EST (6:30pm UTC)
     - cron: '18 18 * * *'  # 6:30pm EST (10:30pm UTC)
-    - cron: '15 22 * * *'  # 10:30pm EST (3:30am UTC next day)
+    - cron: '40 23 * * *'  # 11:40pm EST (4:40am UTC next day)
   workflow_dispatch:
 
 jobs:
