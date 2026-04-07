@@ -1014,15 +1014,37 @@ def run_creator(config: dict, category: str = None):
     search_term = random.choice(search_terms)
     log(f"Search: {search_term}")
     
-    videos = search_pexels(pexels_key, search_term, per_page=3)
+    # Get used video IDs from Airtable to avoid duplicates
+    used_ids = set()
+    try:
+        existing = at.search(config["table_create"], max_records=100)
+        for rec in existing:
+            fields = rec.get("fields", {})
+            # Try to extract Pexels ID from Video URL if stored
+            video_url = fields.get("Video URL", "")
+            if "pexels" in video_url.lower() and "video" in video_url:
+                # Extract ID from URL like https://www.pexels.com/video/1234567/
+                parts = video_url.strip("/").split("/")
+                if parts and parts[-1].isdigit():
+                    used_ids.add(parts[-1])
+    except Exception as e:
+        log(f"  Could not fetch used videos: {e}")
+    
+    videos = search_pexels(pexels_key, search_term, per_page=10)
     if not videos:
         log("No videos found")
         return None
     
-    video = random.choice(videos)
+    # Filter out already used videos
+    available = [v for v in videos if str(v.get("id")) not in used_ids]
+    if not available:
+        log("All found videos already used, trying any video")
+        available = videos
+    
+    video = random.choice(available)
     video_id = video.get("id")
     duration = video.get("duration", 30)
-    log(f"Found: {video_id} ({duration}s)")
+    log(f"Found: {video_id} ({duration}s) [used: {len(used_ids)} already]")
     
     # Step 3: Get random music
     log("--- Getting music ---")
