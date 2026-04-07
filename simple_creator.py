@@ -220,6 +220,36 @@ VIRAL_EXAMPLES += """
 Use these examples as reference for style, tone, and format. Match the energy and structure of these successful posts.
 """
 
+
+def get_recent_virals(at, table_id: str, limit: int = 5) -> list:
+    """Fetch recent high-performing videos from Airtable for prompt learning."""
+    if not table_id:
+        return []
+    try:
+        records = at.search(table_id, max_records=limit, sort_field="Views", sort_dir="desc")
+        return [r.get("fields", {}) for r in records if r.get("fields", {}).get("Script")]
+    except Exception:
+        return []
+
+
+def build_dynamic_prompt(config: dict, at) -> str:
+    """Build the script prompt with recent viral examples for learning."""
+    table_perf = config.get("table_performance", "")
+    recent = get_recent_virals(at, table_perf, limit=3)
+    
+    prompt = TESTOSTERONE_SCRIPT_PROMPT
+    
+    if recent:
+        prompt += "\n\n--- RECENT WINNERS (use these as top reference) ---\n"
+        for i, r in enumerate(recent, 1):
+            script = r.get("Script", "")
+            if script:
+                prompt += f"\n{i}. {script[:500]}...\n"
+        prompt += "\nMatch the style and hooks of these proven winners.\n"
+    
+    return prompt
+
+
 TESTOSTERONE_SCRIPT_PROMPT = """You are a viral short-form content writer for Rock Mountain Performance (@rockmountainperformance), a transparent, research-aligned testosterone support brand for men who read labels and care what actually works.
 
 BRAND IDENTITY:
@@ -681,12 +711,18 @@ def parse_script_and_caption(raw_response: str) -> tuple:
     return on_screen, caption
 
 
-def generate_script(config: dict, category: str, duration_sec: float) -> str:
+def generate_script(config: dict, category: str, duration_sec: float, at=None) -> str:
     """Generate on-screen text + caption using Claude. Returns the full raw response
     containing both sections separated by ---CAPTION---."""
     target_sec = min(duration_sec, 45)
     
     log(f"  Generating {category} script with Claude...")
+    
+    # Build dynamic prompt with recent viral examples if available
+    system_prompt = TESTOSTERONE_SCRIPT_PROMPT.format(target_sec=target_sec, category=category)
+    if at and config.get("table_performance"):
+        system_prompt = build_dynamic_prompt(config, at)
+        log(f"  Using dynamic prompt with recent viral examples")
     
     try:
         import anthropic
@@ -695,7 +731,7 @@ def generate_script(config: dict, category: str, duration_sec: float) -> str:
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=2048,
-            system=TESTOSTERONE_SCRIPT_PROMPT.format(target_sec=target_sec, category=category),
+            system=system_prompt,
             messages=[
                 {"role": "user", "content": f"Write a powerful testosterone-focused script for a {category} video."}
             ]
@@ -1113,7 +1149,7 @@ def run_creator(config: dict, category: str = None):
     
     # Step 5: Generate script (on-screen text + caption)
     log("--- Generating script ---")
-    full_script = generate_script(config, category, duration)
+    full_script = generate_script(config, category, duration, at)
     on_screen_text, caption_text = parse_script_and_caption(full_script)
     log(f"  On-screen: {on_screen_text[:60]}...")
     if caption_text:
@@ -1155,6 +1191,22 @@ def run_creator(config: dict, category: str = None):
     if platforms:
         log("--- Posting to platforms ---")
         post_to_platforms(config, video_url, full_script, [p.strip() for p in platforms])
+    
+    # Step 11: Log to performance table for learning
+    if config.get("table_performance"):
+        try:
+            at.create_record(config["table_performance"], {
+                "Script": full_script,
+                "Video URL": video_url,
+                "Pexels ID": str(video_id),
+                "Category": category,
+                "Views": 0,
+                "Likes": 0,
+                "Status": "New",
+            })
+            log("  Saved to performance table for learning")
+        except Exception as e:
+            log(f"  Could not save to performance table: {e}")
     
     log(f"=== Done! ===")
     log(f"    Record: {record_id}")

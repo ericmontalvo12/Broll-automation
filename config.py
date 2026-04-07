@@ -69,6 +69,7 @@ def load_config(airtable_token: str) -> dict:
         "google_drive_folder_id": fields.get("Google Drive Folder ID", ""),
         "pexels_api_key": fields.get("Pexels API Key", ""),
         "table_broll": fields.get("Table B-Roll ID", ""),
+        "table_performance": fields.get("Table Performance ID", ""),
 
         # Blotato Account IDs
         "youtube_account_id": fields.get("YouTube Account ID", ""),
