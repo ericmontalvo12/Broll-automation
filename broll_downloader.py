@@ -35,6 +35,7 @@ def search_pexels(api_key, query, per_page=5):
 
 
 def download_pexels_video(api_key, video_id, output_path):
+    import requests
     url = f"https://api.pexels.com/videos/videos/{video_id}"
     headers = {"Authorization": api_key}
     result = api_request(url, headers=headers)
@@ -48,19 +49,14 @@ def download_pexels_video(api_key, video_id, output_path):
     video_url = mp4s[0].get("link")
     log(f"  Downloading from: {video_url[:50]}...")
     
-    from urllib.request import Request, urlopen
-    req = Request(video_url, headers={
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": "https://www.pexels.com/",
-        "Authorization": api_key
-    })
-    try:
-        with urlopen(req, timeout=60) as response:
-            with open(output_path, "wb") as f:
-                f.write(response.read())
-    except Exception as e:
-        log(f"Download error: {e}")
+    response = requests.get(video_url, headers={"Authorization": api_key}, stream=True, timeout=60)
+    if response.status_code != 200:
+        log(f"  HTTP {response.status_code}: {response.text[:100]}")
         return None
+    
+    with open(output_path, "wb") as f:
+        for chunk in response.iter_content(chunk_size=8192):
+            f.write(chunk)
     return output_path
 
 
