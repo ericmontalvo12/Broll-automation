@@ -2,9 +2,10 @@ name: Content Creator
 
 on:
   schedule:
+    - cron: '15 6 * * *'   # 6:30am EST (11:30am UTC)
     - cron: '15 10 * * *'  # 10:30am EST (3:30pm UTC)
     - cron: '15 14 * * *'  # 2:30pm EST (6:30pm UTC)
-    - cron: '15 18 * * *'  # 6:30pm EST (10:30pm UTC)
+    - cron: '18 18 * * *'  # 6:30pm EST (10:30pm UTC)
     - cron: '15 22 * * *'  # 10:30pm EST (3:30am UTC next day)
   workflow_dispatch:
 
