@@ -27,11 +27,17 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 
 
 def search_pexels(api_key, query, per_page=5):
+    import requests
     from urllib.parse import urlencode
     url = f"https://api.pexels.com/videos/search?{urlencode({'query': query, 'per_page': per_page, 'orientation': 'portrait'})}"
-    headers = {"Authorization": api_key}
-    result = api_request(url, headers=headers)
-    return result.get("videos", [])
+    log(f"  Pexels search: {query}")
+    
+    response = requests.get(url, headers={"Authorization": api_key}, timeout=30)
+    log(f"  HTTP {response.status_code}")
+    if response.status_code != 200:
+        log(f"  Error: {response.text[:200]}")
+        return []
+    return response.json().get("videos", [])
 
 
 def download_pexels_video(api_key, video_id, output_path):
@@ -132,6 +138,8 @@ def ensure_broll_table(at, config):
 def run_broll_download(config, category=None, videos_per_term=1):
     at = AirtableClient(config)
     pexels_key = config.get("pexels_api_key", "")
+    
+    log(f"Pexels key loaded: {pexels_key[:20] if pexels_key else 'EMPTY'}...")
     
     if not pexels_key:
         log("ERROR: Pexels API key not found in Setup table")
