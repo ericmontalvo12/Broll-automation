@@ -118,7 +118,12 @@ def get_airtable_token() -> str:
 
 
 def get_blotato_api_key() -> str:
-    """Get the Blotato API key from .env."""
+    """Get the Blotato API key from env or .env file."""
+    import os
+    env_key = os.environ.get("BLOTATO_API_KEY")
+    if env_key:
+        return env_key
+    
     search_paths = [
         PROJECT_DIR / ".env",
         PROJECT_DIR.parent.parent / ".env",
@@ -134,7 +139,12 @@ def get_blotato_api_key() -> str:
 
 
 def get_env_var(key: str, default: str = "") -> str:
-    """Get any env var from .env file."""
+    """Get any env var from env or .env file."""
+    import os
+    env_val = os.environ.get(key)
+    if env_val:
+        return env_val
+    
     search_paths = [
         PROJECT_DIR / ".env",
         PROJECT_DIR.parent.parent / ".env",

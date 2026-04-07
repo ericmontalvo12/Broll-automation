@@ -1,4 +1,4 @@
-name: B-Roll Downloader
+name: Content Creator
 
 on:
   schedule:
@@ -6,7 +6,7 @@ on:
     - cron: '15 14 * * *'  # 2:30pm EST (6:30pm UTC)
     - cron: '15 18 * * *'  # 6:30pm EST (10:30pm UTC)
     - cron: '15 22 * * *'  # 10:30pm EST (3:30am UTC next day)
-  workflow_dispatch:  # Allow manual run
+  workflow_dispatch:
 
 jobs:
   run:
@@ -22,7 +22,11 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Run broll downloader
+      - name: Run creator
         env:
           AIRTABLE_PERSONAL_ACCESS_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
-        run: python broll_downloader.py
+          BLOTATO_API_KEY: ${{ secrets.BLOTATO_API_KEY }}
+          BLOTATO_TIKTOK_ACCOUNT_ID: ${{ secrets.BLOTATO_TIKTOK_ACCOUNT_ID }}
+          BLOTATO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.BLOTATO_INSTAGRAM_ACCOUNT_ID }}
+          AUTO_POST_PLATFORMS: ${{ secrets.AUTO_POST_PLATFORMS }}
+        run: python simple_creator.py
