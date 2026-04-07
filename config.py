@@ -97,7 +97,12 @@ def load_config(airtable_token: str) -> dict:
 
 
 def get_airtable_token() -> str:
-    """Get the Airtable token. Checks env file in project root, then parent dirs."""
+    """Get the Airtable token. Checks env var, then env file in project root, then parent dirs."""
+    import os
+    env_token = os.environ.get("AIRTABLE_PERSONAL_ACCESS_TOKEN")
+    if env_token:
+        return env_token
+    
     search_paths = [
         PROJECT_DIR / ".env",
         PROJECT_DIR.parent.parent / ".env",
