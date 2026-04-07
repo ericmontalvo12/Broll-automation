@@ -20,8 +20,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install ffmpeg
-        run: choco install ffmpeg -y
+      - name: Install ffmpeg and curl
+        run: choco install ffmpeg curl -y
 
       - name: Install dependencies
         run: pip install requests
