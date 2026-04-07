@@ -46,11 +46,13 @@ def download_pexels_video(api_key, video_id, output_path):
     
     mp4s.sort(key=lambda v: v.get("width", 0) * v.get("height", 0), reverse=True)
     video_url = mp4s[0].get("link")
+    log(f"  Downloading from: {video_url[:50]}...")
     
     from urllib.request import Request, urlopen
     req = Request(video_url, headers={
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Referer": "https://www.pexels.com/"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://www.pexels.com/",
+        "Authorization": api_key
     })
     try:
         with urlopen(req, timeout=60) as response:
