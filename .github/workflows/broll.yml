@@ -24,7 +24,7 @@ jobs:
         run: choco install ffmpeg curl -y
 
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests anthropic
 
       - name: Run creator
         env:

@@ -201,6 +201,20 @@ def generate_caption(script: str, platform: str) -> str:
 
 # ── Script Generation (Claude AI) ─────────────────────────────────────────────
 
+# Load viral examples for reference
+VIRAL_EXAMPLES = """
+Here are examples of high-performing content for Rock Mountain Performance:
+
+"""
+
+with open("prompts/viral_examples.txt", "r") as f:
+    VIRAL_EXAMPLES += f.read()
+
+VIRAL_EXAMPLES += """
+
+Use these examples as reference for style, tone, and format. Match the energy and structure of these successful posts.
+"""
+
 TESTOSTERONE_SCRIPT_PROMPT = """You are a viral short-form content writer for Rock Mountain Performance (@rockmountainperformance), a transparent, research-aligned testosterone support brand for men who read labels and care what actually works.
 
 BRAND IDENTITY:
@@ -212,6 +226,8 @@ BRAND IDENTITY:
 - Brand enemy: Underdosed, hidden, overclaimed formulas.
 - Product: Peak Performance — research-backed, fully disclosed labels, batch tested, 30-day guarantee. Clinical doses of ingredients selected to support real hormonal function.
 - The brand sounds like: "Read the label." / "Check the dose." / "Look at the mechanism." / "Judge the formula, not the claim."
+
+""" + VIRAL_EXAMPLES + """
 
 ALLOWED THEMES (pick 1-2):
 - Testosterone optimization and hormonal health (evidence-based)
