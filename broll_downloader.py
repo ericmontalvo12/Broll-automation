@@ -48,10 +48,17 @@ def download_pexels_video(api_key, video_id, output_path):
     video_url = mp4s[0].get("link")
     
     from urllib.request import Request, urlopen
-    req = Request(video_url, headers={"User-Agent": "Mozilla/5.0"})
-    with urlopen(req) as response:
-        with open(output_path, "wb") as f:
-            f.write(response.read())
+    req = Request(video_url, headers={
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Referer": "https://www.pexels.com/"
+    })
+    try:
+        with urlopen(req, timeout=60) as response:
+            with open(output_path, "wb") as f:
+                f.write(response.read())
+    except Exception as e:
+        log(f"Download error: {e}")
+        return None
     return output_path
 
 
