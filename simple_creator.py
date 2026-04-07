@@ -945,6 +945,10 @@ def search_pexels(api_key, query, per_page=3):
 
 
 def download_pexels_video(api_key, video_id, output_path):
+    if output_path.exists():
+        log(f"  Video already exists: {output_path.name}")
+        return str(output_path)
+    
     url = f"https://api.pexels.com/videos/videos/{video_id}"
     result = subprocess.run(
         ["curl", "-s", "-H", f"Authorization: {api_key}", url],
