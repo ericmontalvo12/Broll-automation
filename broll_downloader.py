@@ -41,15 +41,27 @@ def download_pexels_video(api_key, video_id, output_path):
     result = api_request(url, headers=headers)
     
     video_files = result.get("video_files", [])
+    log(f"  Video files: {len(video_files)} found")
     mp4s = [v for v in video_files if v.get("file_type") == "video/mp4"]
     if not mp4s:
         return None
     
     mp4s.sort(key=lambda v: v.get("width", 0) * v.get("height", 0), reverse=True)
-    video_url = mp4s[0].get("link")
-    log(f"  Downloading from: {video_url[:50]}...")
+    if not mp4s:
+        log(f"  No MP4 files found in: {[v.get('file_type') for v in video_files]}")
+        return None
     
-    response = requests.get(video_url, headers={"Authorization": api_key}, stream=True, timeout=60)
+    video_url = mp4s[0].get("link")
+    
+    if "?" not in video_url:
+        video_url += f"?api_key={api_key}"
+    
+    log(f"  Downloading from: {video_url[:60]}...")
+    
+    response = requests.get(video_url, headers={
+        "User-Agent": "Mozilla/5.0",
+        "Authorization": f"Client-ID {api_key}"
+    }, stream=True, timeout=60)
     if response.status_code != 200:
         log(f"  HTTP {response.status_code}: {response.text[:100]}")
         return None
