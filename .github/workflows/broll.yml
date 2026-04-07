@@ -22,5 +22,4 @@ jobs:
       - name: Run broll downloader
         env:
           AIRTABLE_PERSONAL_ACCESS_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
-          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: python broll_downloader.py

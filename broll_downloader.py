@@ -109,7 +109,7 @@ def ensure_broll_table(at, config):
     return new_table.get("id")
 
 
-def run_broll_download(config, category=None, videos_per_term=3):
+def run_broll_download(config, category=None, videos_per_term=1):
     at = AirtableClient(config)
     pexels_key = config.get("pexels_api_key", "")
     
@@ -124,13 +124,20 @@ def run_broll_download(config, category=None, videos_per_term=3):
     
     categories = [category] if category else list(PEXELS_SEARCH_TERMS.keys())
     
+    total_downloaded = 0
+    max_per_day = 5
+    
     for cat in categories:
+        if total_downloaded >= max_per_day:
+            break
         if cat not in PEXELS_SEARCH_TERMS:
             log(f"Unknown category: {cat}")
             continue
         
         log(f"=== Downloading {cat} videos ===")
         for term in PEXELS_SEARCH_TERMS[cat]:
+            if total_downloaded >= max_per_day:
+                break
             log(f"Searching: {term}")
             videos = search_pexels(pexels_key, term, per_page=videos_per_term)
             
@@ -141,6 +148,8 @@ def run_broll_download(config, category=None, videos_per_term=3):
             log(f"  Found {len(videos)} videos")
             
             for i, video in enumerate(videos[:videos_per_term]):
+                if total_downloaded >= max_per_day:
+                    break
                 video_id = video.get("id")
                 filename = f"{cat}_{video_id}.mp4"
                 output_path = OUTPUT_DIR / filename
@@ -154,6 +163,7 @@ def run_broll_download(config, category=None, videos_per_term=3):
                     result = download_pexels_video(pexels_key, video_id, output_path)
                     if result:
                         add_to_airtable(at, table_id, cat, term, str(output_path), video)
+                        total_downloaded += 1
                         log(f"  Saved: {filename}")
                     else:
                         log(f"  Failed to get download URL")
@@ -162,7 +172,7 @@ def run_broll_download(config, category=None, videos_per_term=3):
                 
                 time.sleep(1)
     
-    log("=== B-Roll download complete ===")
+    log(f"=== B-Roll download complete: {total_downloaded} videos ===")
 
 
 if __name__ == "__main__":
