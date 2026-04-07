@@ -6,7 +6,6 @@ Downloads workout, food, and lifestyle videos from Pexels API.
 
 import json
 import os
-import subprocess
 import time
 from datetime import datetime
 from pathlib import Path
@@ -48,7 +47,11 @@ def download_pexels_video(api_key, video_id, output_path):
     mp4s.sort(key=lambda v: v.get("width", 0) * v.get("height", 0), reverse=True)
     video_url = mp4s[0].get("link")
     
-    subprocess.run(["curl", "-s", "-L", "-o", str(output_path), video_url], check=True)
+    from urllib.request import Request, urlopen
+    req = Request(video_url, headers={"User-Agent": "Mozilla/5.0"})
+    with urlopen(req) as response:
+        with open(output_path, "wb") as f:
+            f.write(response.read())
     return output_path
 
 
