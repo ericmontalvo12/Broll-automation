@@ -202,13 +202,18 @@ def generate_caption(script: str, platform: str) -> str:
 # ── Script Generation (Claude AI) ─────────────────────────────────────────────
 
 # Load viral examples for reference
+from pathlib import Path
+PROMPT_DIR = Path(__file__).resolve().parent
+
 VIRAL_EXAMPLES = """
 Here are examples of high-performing content for Rock Mountain Performance:
 
 """
 
-with open("prompts/viral_examples.txt", "r") as f:
-    VIRAL_EXAMPLES += f.read()
+viral_examples_path = PROMPT_DIR / "prompts" / "viral_examples.txt"
+if viral_examples_path.exists():
+    with open(viral_examples_path, "r") as f:
+        VIRAL_EXAMPLES += f.read()
 
 VIRAL_EXAMPLES += """
 
