@@ -1030,11 +1030,21 @@ def run_creator(config: dict, category: str = None):
         category = random.choice(list(PEXELS_SEARCH_TERMS.keys()))
     log(f"Category: {category}")
     
-    # Step 2: Search Pexels
+    # Step 2: Search Pexels with multiple related terms for better match
     log("--- Searching Pexels ---")
     search_terms = PEXELS_SEARCH_TERMS.get(category, PEXELS_SEARCH_TERMS["lifestyle"])
-    search_term = random.choice(search_terms)
-    log(f"Search: {search_term}")
+    
+    # Try each search term until we find good videos
+    all_videos = []
+    for term in search_terms[:3]:  # Try first 3 terms
+        log(f"  Trying search: {term}")
+        videos = search_pexels(pexels_key, term, per_page=10)
+        if videos:
+            all_videos.extend(videos)
+    
+    if not all_videos:
+        log("No videos found")
+        return None
     
     # Get used video IDs from Airtable to avoid duplicates
     used_ids = set()
@@ -1042,20 +1052,37 @@ def run_creator(config: dict, category: str = None):
         existing = at.search(config["table_create"], max_records=100)
         for rec in existing:
             fields = rec.get("fields", {})
-            # Try to extract Pexels ID from Video URL if stored
             video_url = fields.get("Video URL", "")
             if "pexels" in video_url.lower() and "video" in video_url:
-                # Extract ID from URL like https://www.pexels.com/video/1234567/
                 parts = video_url.strip("/").split("/")
                 if parts and parts[-1].isdigit():
                     used_ids.add(parts[-1])
     except Exception as e:
         log(f"  Could not fetch used videos: {e}")
     
-    videos = search_pexels(pexels_key, search_term, per_page=10)
-    if not videos:
-        log("No videos found")
-        return None
+    videos = all_videos
+    
+    # Score and sort videos by quality
+    def score_video(v):
+        # Prefer duration between 15-30 seconds (ideal for short-form)
+        dur = v.get("duration", 999)
+        dur_score = 100 if 15 <= dur <= 30 else (50 if 10 <= dur <= 40 else 20)
+        
+        # Prefer 4x5 (9:16) portrait orientation
+        w, h = v.get("width", 0), v.get("height", 0)
+        if w and h:
+            ratio = w / h
+            ratio_score = 100 if 0.75 <= ratio <= 0.85 else 50
+            quality_score = w * h  # Higher resolution is better
+        else:
+            ratio_score = 50
+            quality_score = 0
+        
+        return dur_score + ratio_score + (quality_score // 10000)
+    
+    # Sort by score (best first)
+    videos.sort(key=score_video, reverse=True)
+    log(f"  Found {len(videos)} videos, top scored: {videos[0].get('duration')}s, {videos[0].get('width')}x{videos[0].get('height')}")
     
     # Filter out already used videos
     available = [v for v in videos if str(v.get("id")) not in used_ids]
