@@ -966,6 +966,7 @@ def search_pexels(api_key, query, per_page=3):
 
 
 def download_pexels_video(api_key, video_id, output_path):
+    output_path = Path(output_path)
     if output_path.exists():
         log(f"  Video already exists: {output_path.name}")
         return str(output_path)
