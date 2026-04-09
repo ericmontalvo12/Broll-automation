@@ -240,13 +240,13 @@ def get_recent_virals(at, table_id: str, limit: int = 5) -> list:
         return []
 
 
-def build_dynamic_prompt(config: dict, at) -> str:
+def build_dynamic_prompt(config: dict, at, target_sec: float = 30, category: str = "lifestyle") -> str:
     """Build the script prompt with recent viral examples for learning."""
     table_perf = config.get("table_performance", "")
     recent = get_recent_virals(at, table_perf, limit=3)
-    
-    prompt = TESTOSTERONE_SCRIPT_PROMPT
-    
+
+    prompt = TESTOSTERONE_SCRIPT_PROMPT.format(target_sec=target_sec, category=category)
+
     if recent:
         prompt += "\n\n--- RECENT WINNERS (use these as top reference) ---\n"
         for i, r in enumerate(recent, 1):
@@ -254,7 +254,7 @@ def build_dynamic_prompt(config: dict, at) -> str:
             if script:
                 prompt += f"\n{i}. {script[:500]}...\n"
         prompt += "\nMatch the style and hooks of these proven winners.\n"
-    
+
     return prompt
 
 
@@ -729,7 +729,7 @@ def generate_script(config: dict, category: str, duration_sec: float, at=None) -
     # Build dynamic prompt with recent viral examples if available
     system_prompt = TESTOSTERONE_SCRIPT_PROMPT.format(target_sec=target_sec, category=category)
     if at and config.get("table_performance"):
-        system_prompt = build_dynamic_prompt(config, at)
+        system_prompt = build_dynamic_prompt(config, at, target_sec=target_sec, category=category)
         log(f"  Using dynamic prompt with recent viral examples")
     
     try:
