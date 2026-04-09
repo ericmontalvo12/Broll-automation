@@ -54,7 +54,7 @@ def blotato_post(endpoint: str, api_key: str, data: dict) -> dict:
     result = subprocess.run(
         ["curl", "-s", "-X", "POST",
          "-H", "Content-Type: application/json",
-         "-H", f"Authorization: Bearer {api_key}",
+         "-H", f"blotato-api-key: {api_key}",
          "-d", json.dumps(data), url],
         capture_output=True, text=True
     )
@@ -737,7 +737,7 @@ def generate_script(config: dict, category: str, duration_sec: float, at=None) -
         client = anthropic.Anthropic(api_key=config.get("anthropic_api_key"))
         
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=2048,
             system=system_prompt,
             messages=[
@@ -1170,13 +1170,23 @@ def run_creator(config: dict, category: str = None):
     # Step 6: Download video
     log("--- Downloading video ---")
     video_path = str(videos_dir / f"{record_id}_pexels.mp4")
-    download_pexels_video(pexels_key, video_id, video_path)
-    
+    try:
+        download_pexels_video(pexels_key, video_id, video_path)
+    except Exception as e:
+        log(f"ERROR: Video download failed: {e}")
+        at.update_record(config["table_create"], record_id, {"Status": "Error - Download failed"})
+        return None
+
     # Step 7: Add captions (on-screen text only — not the long caption)
     log("--- Adding captions ---")
     captioned_path = str(videos_dir / f"{record_id}_captioned.mp4")
-    add_captions(video_path, on_screen_text, captioned_path)
-    
+    try:
+        add_captions(video_path, on_screen_text, captioned_path)
+    except Exception as e:
+        log(f"ERROR: Caption step failed: {e}")
+        at.update_record(config["table_create"], record_id, {"Status": "Error - Caption failed"})
+        return None
+
     # Step 8: Add music
     if music:
         music_path = str(videos_dir / f"{record_id}_music.mp3")
@@ -1185,15 +1195,20 @@ def run_creator(config: dict, category: str = None):
         combine_video_music(captioned_path, music_path, output_path)
     else:
         output_path = captioned_path
-    
+
     # Step 9: Upload
     log("--- Uploading ---")
-    video_url = upload_public(output_path)
-    
+    try:
+        video_url = upload_public(output_path)
+    except Exception as e:
+        log(f"ERROR: Upload failed: {e}")
+        at.update_record(config["table_create"], record_id, {"Status": "Error - Upload failed"})
+        return None
+
     at.update_record(config["table_create"], record_id, {
         "Video URL": video_url,
     })
-    
+
     # Step 10: Post to platforms (pass full_script so caption can be extracted)
     platforms = config.get("auto_post_platforms", "").split(",") if config.get("auto_post_platforms") else []
     if platforms:
