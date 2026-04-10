@@ -421,7 +421,7 @@ Recovery is where the magic happens. More sleep is non negotiable because testos
 
 Finally Lifting heavy things provides the mechanical stress needed to upregulate androgen receptors. Use Peak Performance to amplify the results.
 
-Comment PRIMAL and I'll send you the keys on how to optimize naturally.
+Comment TESTOSTERONE and I'll send you the keys on how to optimize naturally.
 #testosterone #hormonal #protein #glowup #biology
 ---
 
