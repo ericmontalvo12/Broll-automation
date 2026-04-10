@@ -54,7 +54,7 @@ def blotato_post(endpoint: str, api_key: str, data: dict) -> dict:
     result = subprocess.run(
         ["curl", "-s", "-X", "POST",
          "-H", "Content-Type: application/json",
-         "-H", f"Authorization: Bearer {api_key}",
+         "-H", f"blotato-api-key: {api_key}",
          "-d", json.dumps(data), url],
         capture_output=True, text=True
     )
@@ -150,7 +150,10 @@ def post_to_platforms(config: dict, video_url: str, script: str,
             log(f"  Caption: {caption[:80]}...")
             post_id = post_to_blotato(api_key, account_id, platform, video_url, caption)
             results[platform] = post_id
-            log(f"  {platform} post submitted: {post_id[:20]}...")
+            if post_id:
+                log(f"  {platform} post submitted: {post_id[:20]}...")
+            else:
+                log(f"  {platform} post may have failed — no submission ID returned")
         except Exception as e:
             log(f"  {platform} post failed: {e}")
     
@@ -240,13 +243,13 @@ def get_recent_virals(at, table_id: str, limit: int = 5) -> list:
         return []
 
 
-def build_dynamic_prompt(config: dict, at) -> str:
+def build_dynamic_prompt(config: dict, at, target_sec: float = 30, category: str = "lifestyle") -> str:
     """Build the script prompt with recent viral examples for learning."""
     table_perf = config.get("table_performance", "")
     recent = get_recent_virals(at, table_perf, limit=3)
-    
-    prompt = TESTOSTERONE_SCRIPT_PROMPT
-    
+
+    prompt = TESTOSTERONE_SCRIPT_PROMPT.format(target_sec=target_sec, category=category)
+
     if recent:
         prompt += "\n\n--- RECENT WINNERS (use these as top reference) ---\n"
         for i, r in enumerate(recent, 1):
@@ -254,7 +257,7 @@ def build_dynamic_prompt(config: dict, at) -> str:
             if script:
                 prompt += f"\n{i}. {script[:500]}...\n"
         prompt += "\nMatch the style and hooks of these proven winners.\n"
-    
+
     return prompt
 
 
@@ -729,7 +732,7 @@ def generate_script(config: dict, category: str, duration_sec: float, at=None) -
     # Build dynamic prompt with recent viral examples if available
     system_prompt = TESTOSTERONE_SCRIPT_PROMPT.format(target_sec=target_sec, category=category)
     if at and config.get("table_performance"):
-        system_prompt = build_dynamic_prompt(config, at)
+        system_prompt = build_dynamic_prompt(config, at, target_sec=target_sec, category=category)
         log(f"  Using dynamic prompt with recent viral examples")
     
     try:
@@ -737,7 +740,7 @@ def generate_script(config: dict, category: str, duration_sec: float, at=None) -
         client = anthropic.Anthropic(api_key=config.get("anthropic_api_key"))
         
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=2048,
             system=system_prompt,
             messages=[
@@ -803,22 +806,6 @@ def generate_script(config: dict, category: str, duration_sec: float, at=None) -
 
 
 # ── Text Overlay (Captions) ───────────────────────────────────────────────────
-
-def create_srt(sentences: list, output_path: str):
-    with open(output_path, "w") as f:
-        for i, (start, end, text) in enumerate(sentences, 1):
-            f.write(f"{i}\n")
-            f.write(f"{format_time(start)} --> {format_time(end)}\n")
-            f.write(f"{text}\n\n")
-
-
-def format_time(seconds: float) -> str:
-    h = int(seconds // 3600)
-    m = int((seconds % 3600) // 60)
-    s = int(seconds % 60)
-    ms = int((seconds % 1) * 1000)
-    return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
-
 
 def add_captions(video_path: str, script: str, output_path: str) -> str:
     log("  Adding captions...")
@@ -1025,7 +1012,7 @@ def download_pexels_video(api_key, video_id, output_path):
     video_files = data.get("video_files", [])
     mp4s = [v for v in video_files if v.get("file_type") == "video/mp4"]
     if not mp4s:
-        return None
+        raise RuntimeError(f"No mp4 files found for Pexels video {video_id} (API returned: {list(data.keys())})")
     
     def is_4x5(v):
         w, h = v.get("width", 0), v.get("height", 0)
@@ -1170,13 +1157,23 @@ def run_creator(config: dict, category: str = None):
     # Step 6: Download video
     log("--- Downloading video ---")
     video_path = str(videos_dir / f"{record_id}_pexels.mp4")
-    download_pexels_video(pexels_key, video_id, video_path)
-    
+    try:
+        download_pexels_video(pexels_key, video_id, video_path)
+    except Exception as e:
+        log(f"ERROR: Video download failed: {e}")
+        at.update_record(config["table_create"], record_id, {"Status": "Error - Download failed"})
+        return None
+
     # Step 7: Add captions (on-screen text only — not the long caption)
     log("--- Adding captions ---")
     captioned_path = str(videos_dir / f"{record_id}_captioned.mp4")
-    add_captions(video_path, on_screen_text, captioned_path)
-    
+    try:
+        add_captions(video_path, on_screen_text, captioned_path)
+    except Exception as e:
+        log(f"ERROR: Caption step failed: {e}")
+        at.update_record(config["table_create"], record_id, {"Status": "Error - Caption failed"})
+        return None
+
     # Step 8: Add music
     if music:
         music_path = str(videos_dir / f"{record_id}_music.mp3")
@@ -1185,15 +1182,20 @@ def run_creator(config: dict, category: str = None):
         combine_video_music(captioned_path, music_path, output_path)
     else:
         output_path = captioned_path
-    
+
     # Step 9: Upload
     log("--- Uploading ---")
-    video_url = upload_public(output_path)
-    
+    try:
+        video_url = upload_public(output_path)
+    except Exception as e:
+        log(f"ERROR: Upload failed: {e}")
+        at.update_record(config["table_create"], record_id, {"Status": "Error - Upload failed"})
+        return None
+
     at.update_record(config["table_create"], record_id, {
         "Video URL": video_url,
     })
-    
+
     # Step 10: Post to platforms (pass full_script so caption can be extracted)
     platforms = config.get("auto_post_platforms", "").split(",") if config.get("auto_post_platforms") else []
     if platforms:
@@ -1281,12 +1283,22 @@ def rerun_from_record(config: dict, record_id: str):
     
     log("--- Downloading video ---")
     video_path = str(videos_dir / f"{new_record_id}_pexels.mp4")
-    download_pexels_video(pexels_key, video_id, video_path)
-    
+    try:
+        download_pexels_video(pexels_key, video_id, video_path)
+    except Exception as e:
+        log(f"ERROR: Video download failed: {e}")
+        at.update_record(config["table_create"], new_record_id, {"Status": "Error - Download failed"})
+        return None
+
     log("--- Adding captions ---")
     captioned_path = str(videos_dir / f"{new_record_id}_captioned.mp4")
-    add_captions(video_path, on_screen_text, captioned_path)
-    
+    try:
+        add_captions(video_path, on_screen_text, captioned_path)
+    except Exception as e:
+        log(f"ERROR: Caption step failed: {e}")
+        at.update_record(config["table_create"], new_record_id, {"Status": "Error - Caption failed"})
+        return None
+
     music_table = config.get("table_music", "")
     music = get_random_music(at, music_table) if music_table else None
     if music:
@@ -1296,9 +1308,14 @@ def rerun_from_record(config: dict, record_id: str):
         combine_video_music(captioned_path, music_path, output_path)
     else:
         output_path = captioned_path
-    
+
     log("--- Uploading ---")
-    video_url = upload_public(output_path)
+    try:
+        video_url = upload_public(output_path)
+    except Exception as e:
+        log(f"ERROR: Upload failed: {e}")
+        at.update_record(config["table_create"], new_record_id, {"Status": "Error - Upload failed"})
+        return None
     
     at.update_record(config["table_create"], new_record_id, {
         "Video URL": video_url,
@@ -1324,10 +1341,19 @@ if __name__ == "__main__":
     
     token = get_airtable_token()
     cfg = load_config(token)
-    cfg["blotato_api_key"] = get_blotato_api_key()
-    cfg["instagram_account_id"] = get_env_var("BLOTATO_INSTAGRAM_ACCOUNT_ID")
-    cfg["tiktok_account_id"] = get_env_var("BLOTATO_TIKTOK_ACCOUNT_ID")
-    cfg["auto_post_platforms"] = get_env_var("AUTO_POST_PLATFORMS")
+    # Override Airtable values with env vars only when the env var is actually set
+    blotato_key = get_blotato_api_key()
+    if blotato_key:
+        cfg["blotato_api_key"] = blotato_key
+    instagram_id = get_env_var("BLOTATO_INSTAGRAM_ACCOUNT_ID")
+    if instagram_id:
+        cfg["instagram_account_id"] = instagram_id
+    tiktok_id = get_env_var("BLOTATO_TIKTOK_ACCOUNT_ID")
+    if tiktok_id:
+        cfg["tiktok_account_id"] = tiktok_id
+    auto_post = get_env_var("AUTO_POST_PLATFORMS")
+    if auto_post:
+        cfg["auto_post_platforms"] = auto_post
     
     args = sys.argv[1:]
     if len(args) == 1 and args[0].startswith("rec"):
