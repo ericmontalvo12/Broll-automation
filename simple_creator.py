@@ -288,20 +288,50 @@ BRAND IDENTITY:
 - Product: Peak Performance — research-backed, fully disclosed labels, batch tested, 30-day guarantee. Clinical doses of ingredients selected to support real hormonal function.
 - The brand sounds like: "Read the label." / "Check the dose." / "Look at the mechanism." / "Judge the formula, not the claim."
 
+SCIENTIFIC ACCURACY — NON-NEGOTIABLE:
+Every factual claim must be grounded in real human research. Before writing any claim, ask: "Is there a peer-reviewed study that supports this in humans?" If not, do not write it.
+
+REQUIRED:
+- Only include claims supported by human clinical studies or well-established physiology
+- When citing a number (e.g. "15% drop in T"), it must reflect real published research
+- Use cautious language that matches the actual strength of evidence:
+  - Strong evidence: "increases," "raises," "is linked to"
+  - Moderate evidence: "may support," "is associated with," "research suggests"
+  - Weak evidence: do not include at all
+- Mechanisms must be physiologically accurate (e.g. aromatase converting T to estrogen is real; "seed oils spike cortisol" is not established — do not use it)
+
+FORBIDDEN CLAIMS (these are bro-science myths — never use them):
+- "Seed oils spike cortisol" or any claim that seed oils directly raise cortisol
+- "Tap water destroys testosterone" (endocrine disruptors exist but this is overstated)
+- "Intermittent fasting spikes testosterone" (evidence is weak and mixed)
+- "Cold exposure raises testosterone" (evidence is very limited in humans)
+- "Porn lowers testosterone" (no solid human evidence)
+- Any absolute claim like "floods your system with testosterone" or "destroys your hormones"
+- Specific percentages or numbers you are not certain are from published research
+
+WHAT IS WELL-SUPPORTED AND SAFE TO USE:
+- Sleep deprivation reducing testosterone (well-studied — one week of 5h sleep linked to ~10-15% T reduction, Leproult & Van Cauter 2011)
+- Zinc deficiency impairing testosterone production
+- Vitamin D correlation with testosterone levels
+- Resistance training (especially compound lifts) acutely raising testosterone
+- Obesity and excess body fat increasing aromatase activity (converting T to estrogen)
+- Chronic stress and elevated cortisol suppressing testosterone
+- Alcohol reducing testosterone synthesis
+- Cholesterol being a precursor to steroid hormones including testosterone
+
 """ + VIRAL_EXAMPLES + """
 
 ALLOWED THEMES (pick 1-2):
-- Testosterone optimization and hormonal health (evidence-based)
+- Testosterone optimization and hormonal health (evidence-based only)
 - Natural T-support: red meat, zinc, vitamin D, sleep, sunlight, cholesterol
-- Cold exposure and hormonal benefits
 - Heavy compound lifts and hormonal response (not generic gym tips)
 - Diet for hormones: healthy fats, eggs, steak, nutrient density
 - Sleep and recovery for testosterone production
-- Avoiding endocrine disruptors (plastics, seed oils, alcohol)
+- Avoiding endocrine disruptors (plastics, alcohol)
 - Transparency in supplements — why most T-boosters fail (underdosed, proprietary blends, no evidence)
 - Educated decision-making: reading labels, checking doses, understanding mechanisms
 - Signs of high/low testosterone (relatable, list-based)
-- Daily habits that raise or kill testosterone
+- Daily habits that raise or kill testosterone (evidence-backed only)
 
 FORBIDDEN:
 - Never mention competitors by name or handle
@@ -310,6 +340,7 @@ FORBIDDEN:
 - Never use "Go to the gym" / generic fitness motivation
 - Never use aggressive bro-science language or overclaimed statements
 - Never use emojis in on-screen text
+- Never make up statistics or cite numbers you are not confident are real
 
 YOU MUST OUTPUT TWO SECTIONS separated by the exact delimiter ---CAPTION---
 
