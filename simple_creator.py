@@ -22,6 +22,7 @@ def log(msg):
 # ── Upload ───────────────────────────────────────────────────────────────────
 
 def upload_public(file_path: str) -> str:
+    # Try catbox.moe first
     result = subprocess.run(
         ["curl", "-s", "-F", "reqtype=fileupload",
          "-F", f"fileToUpload=@{file_path}",
@@ -29,10 +30,24 @@ def upload_public(file_path: str) -> str:
         capture_output=True, text=True
     )
     url = result.stdout.strip()
-    if not url.startswith("http"):
-        raise RuntimeError(f"Upload failed: {result.stdout[:200]}")
-    log(f"  Uploaded: {url[:60]}...")
-    return url
+    if url.startswith("http"):
+        log(f"  Uploaded to catbox: {url[:60]}...")
+        return url
+
+    # Fallback to litterbox (72h temporary storage)
+    log(f"  catbox failed ({result.stdout.strip()[:80]}), trying litterbox...")
+    result = subprocess.run(
+        ["curl", "-s", "-F", "reqtype=fileupload", "-F", "time=72h",
+         "-F", f"fileToUpload=@{file_path}",
+         "https://litterbox.catbox.moe/resources/internals/api.php"],
+        capture_output=True, text=True
+    )
+    url = result.stdout.strip()
+    if url.startswith("http"):
+        log(f"  Uploaded to litterbox: {url[:60]}...")
+        return url
+
+    raise RuntimeError(f"Upload failed on catbox and litterbox: {result.stdout[:200]}")
 
 
 # ── Blotato ────────────────────────────────────────────────────────────────────
@@ -1161,7 +1176,10 @@ def run_creator(config: dict, category: str = None):
         download_pexels_video(pexels_key, video_id, video_path)
     except Exception as e:
         log(f"ERROR: Video download failed: {e}")
-        at.update_record(config["table_create"], record_id, {"Status": "Error - Download failed"})
+        try:
+            at.update_record(config["table_create"], record_id, {"Status": "Error - Download failed"})
+        except Exception:
+            pass
         return None
 
     # Step 7: Add captions (on-screen text only — not the long caption)
@@ -1171,7 +1189,10 @@ def run_creator(config: dict, category: str = None):
         add_captions(video_path, on_screen_text, captioned_path)
     except Exception as e:
         log(f"ERROR: Caption step failed: {e}")
-        at.update_record(config["table_create"], record_id, {"Status": "Error - Caption failed"})
+        try:
+            at.update_record(config["table_create"], record_id, {"Status": "Error - Caption failed"})
+        except Exception:
+            pass
         return None
 
     # Step 8: Add music
@@ -1189,7 +1210,10 @@ def run_creator(config: dict, category: str = None):
         video_url = upload_public(output_path)
     except Exception as e:
         log(f"ERROR: Upload failed: {e}")
-        at.update_record(config["table_create"], record_id, {"Status": "Error - Upload failed"})
+        try:
+            at.update_record(config["table_create"], record_id, {"Status": "Error - Upload failed"})
+        except Exception:
+            pass
         return None
 
     at.update_record(config["table_create"], record_id, {
@@ -1287,7 +1311,10 @@ def rerun_from_record(config: dict, record_id: str):
         download_pexels_video(pexels_key, video_id, video_path)
     except Exception as e:
         log(f"ERROR: Video download failed: {e}")
-        at.update_record(config["table_create"], new_record_id, {"Status": "Error - Download failed"})
+        try:
+            at.update_record(config["table_create"], new_record_id, {"Status": "Error - Download failed"})
+        except Exception:
+            pass
         return None
 
     log("--- Adding captions ---")
@@ -1296,7 +1323,10 @@ def rerun_from_record(config: dict, record_id: str):
         add_captions(video_path, on_screen_text, captioned_path)
     except Exception as e:
         log(f"ERROR: Caption step failed: {e}")
-        at.update_record(config["table_create"], new_record_id, {"Status": "Error - Caption failed"})
+        try:
+            at.update_record(config["table_create"], new_record_id, {"Status": "Error - Caption failed"})
+        except Exception:
+            pass
         return None
 
     music_table = config.get("table_music", "")
@@ -1314,7 +1344,10 @@ def rerun_from_record(config: dict, record_id: str):
         video_url = upload_public(output_path)
     except Exception as e:
         log(f"ERROR: Upload failed: {e}")
-        at.update_record(config["table_create"], new_record_id, {"Status": "Error - Upload failed"})
+        try:
+            at.update_record(config["table_create"], new_record_id, {"Status": "Error - Upload failed"})
+        except Exception:
+            pass
         return None
     
     at.update_record(config["table_create"], new_record_id, {
