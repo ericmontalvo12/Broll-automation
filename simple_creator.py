@@ -306,18 +306,22 @@ FORBIDDEN CLAIMS (these are bro-science myths — never use them):
 - "Intermittent fasting spikes testosterone" (evidence is weak and mixed)
 - "Cold exposure raises testosterone" (evidence is very limited in humans)
 - "Porn lowers testosterone" (no solid human evidence)
+- "Garlic lowers cortisol" stated as fact — allicin/cortisol evidence is mostly animal studies; if used at all, must say "may" or "some research suggests"
+- "Pomegranate blocks aromatase" — one small human study and in-vitro data only; must say "may inhibit" not "blocks"
 - Any absolute claim like "floods your system with testosterone" or "destroys your hormones"
 - Specific percentages or numbers you are not certain are from published research
+- On-screen text making a stronger claim than the caption — both must use the same level of caution
 
 WHAT IS WELL-SUPPORTED AND SAFE TO USE:
 - Sleep deprivation reducing testosterone (well-studied — one week of 5h sleep linked to ~10-15% T reduction, Leproult & Van Cauter 2011)
 - Zinc deficiency impairing testosterone production
-- Vitamin D correlation with testosterone levels
+- Vitamin D correlation with testosterone levels in deficient men
 - Resistance training (especially compound lifts) acutely raising testosterone
 - Obesity and excess body fat increasing aromatase activity (converting T to estrogen)
 - Chronic stress and elevated cortisol suppressing testosterone
 - Alcohol reducing testosterone synthesis
 - Cholesterol being a precursor to steroid hormones including testosterone
+- Selenium concentration in testicular tissue (well-established in physiology)
 
 """ + VIRAL_EXAMPLES + """
 
