@@ -741,19 +741,22 @@ def generate_script(config: dict, category: str, duration_sec: float, at=None) -
     """Generate on-screen text + caption using Claude. Returns the full raw response
     containing both sections separated by ---CAPTION---."""
     target_sec = min(duration_sec, 45)
-    
-    log(f"  Generating {category} script with Claude...")
-    
+
+    api_key = config.get("anthropic_api_key", "")
+    if not api_key:
+        log("  WARNING: No Claude API key found - will use mock script")
+
     # Build dynamic prompt with recent viral examples if available
     system_prompt = TESTOSTERONE_SCRIPT_PROMPT.format(target_sec=target_sec, category=category)
     if at and config.get("table_performance"):
         system_prompt = build_dynamic_prompt(config, at, target_sec=target_sec, category=category)
         log(f"  Using dynamic prompt with recent viral examples")
-    
+
     try:
         import anthropic
-        client = anthropic.Anthropic(api_key=config.get("anthropic_api_key"))
-        
+        client = anthropic.Anthropic(api_key=api_key)
+
+        log(f"  Calling Claude API (claude-sonnet-4-6)...")
         response = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=2048,
@@ -762,6 +765,7 @@ def generate_script(config: dict, category: str, duration_sec: float, at=None) -
                 {"role": "user", "content": f"Write a powerful testosterone-focused script for a {category} video."}
             ]
         )
+        log(f"  SUCCESS: Claude generated script")
         return response.content[0].text
     except Exception as e:
         log(f"  Claude API failed ({e}), using mock script")
