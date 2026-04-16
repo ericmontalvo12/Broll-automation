@@ -12,6 +12,8 @@ on:
 jobs:
   run:
     runs-on: windows-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
 
@@ -24,7 +26,7 @@ jobs:
         run: choco install ffmpeg curl -y
 
       - name: Install dependencies
-        run: pip install requests anthropic
+        run: pip install requests anthropic certifi
 
       - name: Run creator
         env:
