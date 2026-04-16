@@ -758,6 +758,51 @@ Target: ~{target_sec:.0f} seconds of on-screen content for the video.
 Write ONE complete output for a {category} video. Start immediately with the on-screen text."""
 
 
+FACT_CHECK_PROMPT = """You are a scientific fact-checker for health and testosterone content. Your job is to review a short-form video script and fix any claims that are not supported by peer-reviewed human clinical research.
+
+REVIEW PROCESS:
+1. Read every factual claim in both the on-screen text and the caption
+2. For each claim, ask: "Is this supported by human clinical studies?"
+3. Fix any claim that is overstated, based only on animal studies, or unsubstantiated
+
+COMMON ISSUES TO CATCH AND FIX:
+- Absolute language ("raises testosterone", "destroys hormones") when evidence is moderate → soften to "may support", "is associated with", "research suggests"
+- Garlic/allicin lowering cortisol stated as fact → animal studies only, must say "some research suggests may lower cortisol"
+- Pomegranate "blocking" aromatase → one small study, must say "may help inhibit"
+- Cold exposure raising testosterone → very limited human evidence, remove or heavily hedge
+- Specific numbers or percentages that aren't from real published studies → remove or replace with hedged language
+- On-screen text making a stronger claim than the caption → both must match in caution level
+
+OUTPUT RULES:
+- If the script is scientifically sound: respond with exactly "APPROVED" and nothing else
+- If fixes are needed: respond with the complete corrected script in the exact same format (on-screen text, then ---CAPTION---, then caption). Do not add commentary — just output the fixed script."""
+
+
+def fact_check_script(client, script: str) -> str:
+    """Run the generated script through a second Claude call for scientific accuracy.
+    Returns the original script if approved, or a corrected version if fixes were needed."""
+    log("  Fact-checking script for scientific accuracy...")
+    try:
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2048,
+            system=FACT_CHECK_PROMPT,
+            messages=[
+                {"role": "user", "content": f"Fact-check this script:\n\n{script}"}
+            ]
+        )
+        result = response.content[0].text.strip()
+        if result == "APPROVED":
+            log("  Fact-check: APPROVED — all claims are scientifically sound")
+            return script
+        else:
+            log("  Fact-check: corrections made — using revised script")
+            return result
+    except Exception as e:
+        log(f"  Fact-check failed ({e}) — using original script")
+        return script
+
+
 def parse_script_and_caption(raw_response: str) -> tuple:
     """Parse Claude's two-part response into (on_screen_text, caption).
     The response is split on the ---CAPTION--- delimiter."""
@@ -801,7 +846,9 @@ def generate_script(config: dict, category: str, duration_sec: float, at=None) -
             ]
         )
         log(f"  SUCCESS: Claude generated script")
-        return response.content[0].text
+        script = response.content[0].text
+        script = fact_check_script(client, script)
+        return script
     except Exception as e:
         log(f"  Claude API failed ({e}), using mock script")
         mock_scripts = {
