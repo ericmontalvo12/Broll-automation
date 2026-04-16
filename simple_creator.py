@@ -773,9 +773,13 @@ COMMON ISSUES TO CATCH AND FIX:
 - Specific numbers or percentages that aren't from real published studies → remove or replace with hedged language
 - On-screen text making a stronger claim than the caption → both must match in caution level
 
-OUTPUT RULES:
-- If the script is scientifically sound: respond with exactly "APPROVED" and nothing else
-- If fixes are needed: respond with the complete corrected script in the exact same format (on-screen text, then ---CAPTION---, then caption). Do not add commentary — just output the fixed script."""
+OUTPUT RULES — STRICT:
+- You must respond with ONLY one of two things — nothing else, no commentary, no explanation, no preamble:
+  1. The single word APPROVED (if every claim is scientifically sound)
+  2. The complete corrected script starting immediately with the on-screen text (if any fixes were needed)
+- Do NOT write anything like "The script is largely sound" or "Here is the corrected version" or any other sentence before or after your output
+- Do NOT explain what you changed
+- Your entire response must be either the word APPROVED or the raw script text"""
 
 
 def fact_check_script(client, script: str) -> str:
@@ -792,12 +796,19 @@ def fact_check_script(client, script: str) -> str:
             ]
         )
         result = response.content[0].text.strip()
-        if result == "APPROVED":
+        if result == "APPROVED" or result.upper().startswith("APPROVED"):
             log("  Fact-check: APPROVED — all claims are scientifically sound")
             return script
-        else:
+        # If the result contains ---CAPTION--- it's a valid corrected script
+        if "---CAPTION---" in result:
+            # Strip any leading commentary before the script starts
+            if "**" in result:
+                result = result[result.index("**"):]
             log("  Fact-check: corrections made — using revised script")
             return result
+        # Fallback: fact-checker returned something unexpected, keep original
+        log(f"  Fact-check returned unexpected format — keeping original script")
+        return script
     except Exception as e:
         log(f"  Fact-check failed ({e}) — using original script")
         return script
