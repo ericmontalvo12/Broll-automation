@@ -931,7 +931,7 @@ def add_captions(video_path: str, script: str, output_path: str) -> str:
     clean_script = script.replace("#", "").replace("*", "").replace("_", " ").strip()
     
     import re
-    clean_script = re.sub(r'\b(HOOK|BODY|CTA|INTRO|OUTRO|SCRIPT)\s*:', '', clean_script, flags=re.IGNORECASE).strip()
+    clean_script = re.sub(r'\b(HOOK|BODY|CTA|INTRO|OUTRO|SCRIPT|ON-SCREEN|ON SCREEN)\s*:?\s*', '', clean_script, flags=re.IGNORECASE).strip()
     
     parts = clean_script.split('\n')
     lines = []
