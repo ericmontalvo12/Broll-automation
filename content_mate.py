@@ -4,8 +4,7 @@ Content Mate v2.2 — Main Entry Point
 Replaces n8n entirely. Run any part of the pipeline from the command line.
 
 Usage:
-    python3 content_mate.py scrape-ig           # Scrape Instagram competitors for Reels
-    python3 content_mate.py scrape-ig @user     # Scrape specific Instagram creator
+    python3 content_mate.py scrape-ig           # Scrape Instagram competitors from Airtable
     python3 content_mate.py analyze <video>     # Extract on-screen text from video (OCR)
     python3 content_mate.py create              # Create video from best idea
     python3 content_mate.py create <idea_id>    # Create video from specific idea
@@ -56,12 +55,9 @@ def show_status(config: dict):
     print()
 
 
-def cmd_scrape_ig(config: dict, username: str = None, count: int = 10):
-    from ig_scraper import run_ig_scraper, scrape_single_creator
-    if username:
-        scrape_single_creator(config, username, count)
-    else:
-        run_ig_scraper(config)
+def cmd_scrape_ig(config: dict):
+    from ig_scraper import run_ig_scraper
+    run_ig_scraper(config)
 
 
 def cmd_analyze(config: dict, video_path: str):
@@ -116,7 +112,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Commands:
-  scrape-ig [user]    Scrape Instagram Reels (all competitors, or specific @user)
+  scrape-ig           Scrape Instagram Reels from competitors in Airtable
   analyze <video>     Extract on-screen text from video (local path or URL)
   create [idea_id]    Create video from best idea (or specific idea)
   publish             Publish all "Schedule" videos
@@ -138,7 +134,7 @@ Commands:
     config = load_config(token)
 
     if args.command == "scrape-ig":
-        cmd_scrape_ig(config, args.target, args.count)
+        cmd_scrape_ig(config)
     elif args.command == "analyze":
         if not args.target:
             print("Error: analyze requires a video path or URL")
