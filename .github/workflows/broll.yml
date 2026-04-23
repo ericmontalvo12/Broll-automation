@@ -22,11 +22,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install ffmpeg, curl and tesseract
-        run: choco install ffmpeg curl tesseract -y
+      - name: Install ffmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
 
       - name: Install dependencies
-        run: pip install requests anthropic certifi opencv-python pytesseract Pillow
+        run: pip install requests anthropic certifi
 
       - name: Run creator
         env:
