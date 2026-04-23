@@ -84,52 +84,29 @@ def download_video(video_url: str, output_path: str) -> str:
     return output_path
 
 
-# ── Script Generation (Claude) ───────────────────────────────────────────────
+# ── OCR Text Extraction ──────────────────────────────────────────────────────
 
-WPS = 2.4  # Words per second speaking rate
+def extract_onscreen_text(video_path: str) -> str:
+    """Extract on-screen text from video using OCR."""
+    from video_ocr import extract_text_from_video
 
-SCRIPT_SYSTEM_PROMPT = """You are a viral YouTube Shorts scriptwriter.
-• Read the target length (seconds) and compute WORD_BUDGET = floor(seconds * WPS). Default WPS = {wps}.
-• Output one script only, no pre/post text.
-• Never exceed WORD_BUDGET words.
-• 6th-grade reading level.
-• Start with a jaw-dropping hook that reveals an unbelievable discovery or secret.
-• Dive into compelling details with specific facts.
-• Maintain an energetic, conversational tone.
-• Conclude with a shocking or mind-bending statement."""
+    log("  Running OCR on video...")
+    result = extract_text_from_video(video_path, fps=0.5)
 
+    if "error" in result:
+        log(f"  OCR error: {result['error']}")
+        return ""
 
-def generate_script(config: dict, caption: str, duration_sec: float) -> str:
-    """Generate a script using Claude based on the IG caption."""
-    import anthropic
+    # Get unique lines of text found
+    unique_lines = result.get("unique_lines", [])
+    hook = result.get("hook", "")
 
-    target_sec = min(duration_sec, 45)
-    word_budget = int(target_sec * WPS)
+    log(f"  Found {len(unique_lines)} text segments")
+    if hook:
+        log(f"  Hook: {hook[:50]}...")
 
-    log(f"  Target: {target_sec:.1f}s × {WPS} WPS = {word_budget} words")
-
-    api_key = config.get("anthropic_api_key", "")
-    if not api_key:
-        log("  WARNING: No Claude API key, using caption as script")
-        return caption
-
-    client = anthropic.Anthropic(api_key=api_key)
-
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1024,
-        system=SCRIPT_SYSTEM_PROMPT.format(wps=WPS),
-        messages=[
-            {"role": "user", "content": (
-                f"Create a viral script based on this Instagram caption:\n\n"
-                f"{caption}\n\n"
-                f"Target length: {target_sec} seconds ({word_budget} words max)"
-            )}
-        ]
-    )
-    script = response.content[0].text
-    log(f"  Script: {len(script.split())} words")
-    return script
+    # Join all unique text
+    return "\n".join(unique_lines)
 
 
 # ── Video Processing (FFmpeg) ────────────────────────────────────────────────
@@ -379,14 +356,18 @@ def run_creator(config: dict, idea_record_id: str = None):
     duration_sec = get_video_duration(source_path)
     log(f"  Duration: {duration_sec:.1f}s")
 
-    # Step 4: Generate script
-    log("--- Generating script ---")
-    at.update_record(config["table_create"], record_id, {"Status": "Scripting"})
-    script = generate_script(config, caption, duration_sec)
+    # Step 4: Extract on-screen text from competitor video (OCR)
+    log("--- Extracting on-screen text ---")
+    at.update_record(config["table_create"], record_id, {"Status": "OCR"})
+    onscreen_text = extract_onscreen_text(source_path)
+
+    # Store both: on-screen text (for video captions) and IG caption (for post)
     at.update_record(config["table_create"], record_id, {
-        "YT Short Script": script,
-        "Source Text": caption,
+        "YT Short Script": onscreen_text,  # On-screen text from OCR
+        "Source Text": caption,             # Competitor's IG caption for publishing
     })
+    log(f"  On-screen text: {len(onscreen_text)} chars")
+    log(f"  IG caption: {len(caption)} chars")
 
     # Step 5: Transform to 9:16
     log("--- Transforming to 9:16 ---")
