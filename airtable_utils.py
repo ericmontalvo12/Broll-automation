@@ -27,8 +27,15 @@ def api_request(url, data=None, method="GET", headers=None):
         body = json.dumps(data).encode()
         h["Content-Type"] = "application/json"
     req = Request(url, data=body, headers=h, method=method)
-    resp = urlopen(req, context=SSL_CTX)
-    return json.loads(resp.read())
+    try:
+        resp = urlopen(req, context=SSL_CTX)
+        return json.loads(resp.read())
+    except Exception as e:
+        # Try to read error response body
+        if hasattr(e, 'read'):
+            error_body = e.read().decode()
+            print(f"API Error: {error_body}")
+        raise
 
 
 def curl_get(url):
