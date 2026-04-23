@@ -1299,8 +1299,7 @@ def run_creator(config: dict, category: str = None):
     log("--- Creating record ---")
     create_record = at.create_record(config["table_create"], {
         "Name": f"{category.title()} - {datetime.now().strftime('%m/%d %H:%M')}",
-        "Status": "Review",
-        "Category": category,
+        "Status": "Scripting",
     })
     record_id = create_record["id"]
     
