@@ -4,13 +4,13 @@ Content Mate v2.2 — Main Entry Point
 Replaces n8n entirely. Run any part of the pipeline from the command line.
 
 Usage:
-    python3 content_mate.py scrape              # Scrape X handles for new ideas
     python3 content_mate.py scrape-ig           # Scrape Instagram competitors for Reels
+    python3 content_mate.py scrape-ig @user     # Scrape specific Instagram creator
     python3 content_mate.py analyze <video>     # Extract on-screen text from video (OCR)
     python3 content_mate.py create              # Create video from best idea
     python3 content_mate.py create <idea_id>    # Create video from specific idea
     python3 content_mate.py publish             # Publish all "Schedule" videos
-    python3 content_mate.py auto                # Full pipeline: scrape + create 5 + publish
+    python3 content_mate.py auto                # Full pipeline: scrape-ig + create 5 + publish
     python3 content_mate.py status              # Show pipeline status
 """
 
@@ -56,11 +56,6 @@ def show_status(config: dict):
     print()
 
 
-def cmd_scrape(config: dict):
-    from scraper import run_scraper
-    run_scraper(config)
-
-
 def cmd_scrape_ig(config: dict, username: str = None, count: int = 10):
     from ig_scraper import run_ig_scraper, scrape_single_creator
     if username:
@@ -89,13 +84,13 @@ def cmd_publish(config: dict):
 
 
 def cmd_auto(config: dict, count: int = 5):
-    """Full auto pipeline: scrape → create N videos → publish scheduled."""
+    """Full auto pipeline: scrape-ig → create N videos → publish scheduled."""
     log("=== Content Mate v2.2 — Full Auto Pipeline ===")
 
-    # Step 1: Scrape
-    log("--- Step 1: Scraping ---")
-    from scraper import run_scraper
-    run_scraper(config)
+    # Step 1: Scrape Instagram
+    log("--- Step 1: Scraping Instagram ---")
+    from ig_scraper import run_ig_scraper
+    run_ig_scraper(config)
 
     # Step 2: Create videos
     log(f"--- Step 2: Creating {count} videos ---")
@@ -121,16 +116,15 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Commands:
-  scrape              Scrape X handles for new ideas
   scrape-ig [user]    Scrape Instagram Reels (all competitors, or specific @user)
   analyze <video>     Extract on-screen text from video (local path or URL)
   create [idea_id]    Create video from best idea (or specific idea)
   publish             Publish all "Schedule" videos
-  auto [--count N]    Full pipeline: scrape + create N + publish (default: 5)
+  auto [--count N]    Full pipeline: scrape-ig + create N + publish (default: 5)
   status              Show pipeline status
         """
     )
-    parser.add_argument("command", choices=["scrape", "scrape-ig", "analyze", "create", "publish", "auto", "status"],
+    parser.add_argument("command", choices=["scrape-ig", "analyze", "create", "publish", "auto", "status"],
                        help="Pipeline command to run")
     parser.add_argument("target", nargs="?", default=None,
                        help="Target: idea_id (for create) or video path/URL (for analyze)")
@@ -143,9 +137,7 @@ Commands:
     token = get_airtable_token()
     config = load_config(token)
 
-    if args.command == "scrape":
-        cmd_scrape(config)
-    elif args.command == "scrape-ig":
+    if args.command == "scrape-ig":
         cmd_scrape_ig(config, args.target, args.count)
     elif args.command == "analyze":
         if not args.target:
