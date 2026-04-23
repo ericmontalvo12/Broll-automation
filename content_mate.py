@@ -5,6 +5,8 @@ Replaces n8n entirely. Run any part of the pipeline from the command line.
 
 Usage:
     python3 content_mate.py scrape              # Scrape X handles for new ideas
+    python3 content_mate.py scrape-ig           # Scrape Instagram competitors for Reels
+    python3 content_mate.py analyze <video>     # Extract on-screen text from video (OCR)
     python3 content_mate.py create              # Create video from best idea
     python3 content_mate.py create <idea_id>    # Create video from specific idea
     python3 content_mate.py publish             # Publish all "Schedule" videos
@@ -59,6 +61,23 @@ def cmd_scrape(config: dict):
     run_scraper(config)
 
 
+def cmd_scrape_ig(config: dict, username: str = None, count: int = 10):
+    from ig_scraper import run_ig_scraper, scrape_single_creator
+    if username:
+        scrape_single_creator(config, username, count)
+    else:
+        run_ig_scraper(config)
+
+
+def cmd_analyze(config: dict, video_path: str):
+    from video_ocr import extract_text_from_video, analyze_competitor_video, print_analysis
+    if video_path.startswith("http"):
+        result = analyze_competitor_video(video_path, config)
+    else:
+        result = extract_text_from_video(video_path)
+    print_analysis(result)
+
+
 def cmd_create(config: dict, idea_id: str = None):
     from creator import run_creator
     run_creator(config, idea_id)
@@ -103,16 +122,18 @@ def main():
         epilog="""
 Commands:
   scrape              Scrape X handles for new ideas
+  scrape-ig [user]    Scrape Instagram Reels (all competitors, or specific @user)
+  analyze <video>     Extract on-screen text from video (local path or URL)
   create [idea_id]    Create video from best idea (or specific idea)
   publish             Publish all "Schedule" videos
   auto [--count N]    Full pipeline: scrape + create N + publish (default: 5)
   status              Show pipeline status
         """
     )
-    parser.add_argument("command", choices=["scrape", "create", "publish", "auto", "status"],
+    parser.add_argument("command", choices=["scrape", "scrape-ig", "analyze", "create", "publish", "auto", "status"],
                        help="Pipeline command to run")
-    parser.add_argument("idea_id", nargs="?", default=None,
-                       help="Specific idea record ID (for create command)")
+    parser.add_argument("target", nargs="?", default=None,
+                       help="Target: idea_id (for create) or video path/URL (for analyze)")
     parser.add_argument("--count", type=int, default=5,
                        help="Number of videos to create in auto mode (default: 5)")
 
@@ -124,8 +145,16 @@ Commands:
 
     if args.command == "scrape":
         cmd_scrape(config)
+    elif args.command == "scrape-ig":
+        cmd_scrape_ig(config, args.target, args.count)
+    elif args.command == "analyze":
+        if not args.target:
+            print("Error: analyze requires a video path or URL")
+            print("Usage: python content_mate.py analyze <video_path_or_url>")
+            sys.exit(1)
+        cmd_analyze(config, args.target)
     elif args.command == "create":
-        cmd_create(config, args.idea_id)
+        cmd_create(config, args.target)
     elif args.command == "publish":
         cmd_publish(config)
     elif args.command == "auto":

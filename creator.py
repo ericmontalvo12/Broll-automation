@@ -226,30 +226,7 @@ def download_broll_video(broll: dict, output_path: str) -> str:
     return output_path
 
 
-# ── Step 3: Research + Script generation ────────────────────────────────────
-
-def research_tweet(config: dict, tweet_text: str, author: str) -> str:
-    """Use GPT-4o-mini-search to find more info about the tweet."""
-    url = "https://api.openai.com/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {config['openai_api_key']}",
-        "Content-Type": "application/json"
-    }
-    body = {
-        "model": "gpt-4o-mini-search-preview-2025-03-11",
-        "messages": [
-            {"role": "user", "content": (
-                f"find out more information about:\n{tweet_text}\n\n"
-                f"Posted by {author} on x.\n\n"
-                "They may have announced something or an update?\n"
-                "I want you to find as many facts and information about it.\n\n"
-                "Come back with at least 500 words"
-            )}
-        ]
-    }
-    result = api_request(url, body, method="POST", headers=headers)
-    return result["choices"][0]["message"]["content"]
-
+# ── Step 3: Script generation ────────────────────────────────────────────────
 
 WPS = 2.4  # Words per second speaking rate
 
@@ -264,34 +241,36 @@ SCRIPT_SYSTEM_PROMPT = """You are a viral YouTube Shorts scriptwriter.
 • Conclude with a truly shocking or mind-bending statement: This final sentence must deliver a powerful, unexpected twist or a profound, *personally relevant* implication that redefines *your* understanding of reality, leaving them stunned, questioning everything, and thinking long after the video ends. It should feel like a glimpse into a future they never imagined."""
 
 
-def generate_script(config: dict, tweet_text: str, research_text: str, duration_sec: float) -> str:
-    """Generate a YT Shorts script using O3. Word count matches source video duration."""
+def generate_script(config: dict, tweet_text: str, duration_sec: float) -> str:
+    """Generate a YT Shorts script using Claude. Word count matches source video duration."""
+    import anthropic
+
     target_sec = min(duration_sec, 45)
     word_budget = int(target_sec * WPS)
 
     log(f"  Target: {target_sec:.1f}s × {WPS} WPS = {word_budget} word budget")
 
-    url = "https://api.openai.com/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {config['openai_api_key']}",
-        "Content-Type": "application/json"
-    }
-    body = {
-        "model": "o3",
-        "messages": [
-            {"role": "system", "content": SCRIPT_SYSTEM_PROMPT.format(wps=WPS)},
+    api_key = config.get("anthropic_api_key", "")
+    if not api_key:
+        raise ValueError("No Claude API key found in config")
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=2048,
+        system=SCRIPT_SYSTEM_PROMPT.format(wps=WPS),
+        messages=[
             {"role": "user", "content": (
                 f"The hook of the intro is usually found in this text, which is the viral X post we're using as inspiration:\n"
                 f"{tweet_text}\n\n"
-                f"Source Text body:\n{research_text}\n\n"
-                f"Target length: seconds: {target_sec}\n\n"
+                f"Target length: {target_sec} seconds\n\n"
                 "Note: Never go over 45 Seconds\n\n"
-                f"(Optional) Speaking rate override: {WPS} words per second."
+                f"Speaking rate: {WPS} words per second."
             )}
         ]
-    }
-    result = api_request(url, body, method="POST", headers=headers)
-    script = result["choices"][0]["message"]["content"]
+    )
+    script = response.content[0].text
 
     actual_words = len(script.split())
     log(f"  Script: {actual_words} words (budget was {word_budget})")
@@ -349,31 +328,33 @@ TESTOSTERONE_SCRIPTS = {
 
 
 def generate_testosterone_script(config: dict, category: str, duration_sec: float) -> str:
-    """Generate a testosterone brand script for B-Roll video."""
+    """Generate a testosterone brand script for B-Roll video using Claude."""
+    import anthropic
+
     target_sec = min(duration_sec, 45)
     word_budget = int(target_sec * WPS)
-    
+
     log(f"  Testosterone script for {category}: {target_sec:.0f}s ({word_budget} words)")
-    
-    url = "https://api.openai.com/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {config['openai_api_key']}",
-        "Content-Type": "application/json"
-    }
-    
-    body = {
-        "model": "o3-mini",
-        "messages": [
-            {"role": "system", "content": TESTOSTERONE_SCRIPT_PROMPT.format(
-                target_sec=target_sec,
-                word_budget=word_budget,
-                category=category
-            )},
+
+    api_key = config.get("anthropic_api_key", "")
+    if not api_key:
+        raise ValueError("No Claude API key found in config")
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=2048,
+        system=TESTOSTERONE_SCRIPT_PROMPT.format(
+            target_sec=target_sec,
+            word_budget=word_budget,
+            category=category
+        ),
+        messages=[
             {"role": "user", "content": f"Write a powerful testosterone-focused script for a {category} video. Duration: {target_sec:.0f} seconds."}
         ]
-    }
-    result = api_request(url, body, method="POST", headers=headers)
-    return result["choices"][0]["message"]["content"]
+    )
+    return response.content[0].text
 
 
 # ── Step 4: Voice generation (ElevenLabs) ───────────────────────────────────
@@ -838,20 +819,14 @@ def run_creator(config: dict, idea_record_id: str = None):
         download_broll_video(idea, xvideo_path)
         duration_sec = float(idea_fields.get("Duration (sec)", 30))
         tweet_text = ""
-        author_name = ""
-        research = ""
     else:
         log("--- Fetching tweet data ---")
         tweet = fetch_tweet(config, idea_link)
         tweet_text = tweet.get("text", "")
-        author_name = tweet.get("author", {}).get("userName", "")
         media = tweet.get("extendedEntities", {}).get("media", [{}])[0]
         duration_ms = media.get("video_info", {}).get("duration_millis", 30000)
         duration_sec = duration_ms / 1000
         download_video(tweet, xvideo_path)
-        log("--- Researching tweet ---")
-        research = research_tweet(config, tweet_text, author_name)
-        log(f"  Research: {len(research)} chars")
 
     # Step 5: Generate script
     log("--- Generating script ---")
@@ -859,7 +834,7 @@ def run_creator(config: dict, idea_record_id: str = None):
         category = idea_fields.get("Category", "lifestyle")
         script = generate_testosterone_script(config, category, duration_sec)
     else:
-        script = generate_script(config, tweet_text, research, duration_sec)
+        script = generate_script(config, tweet_text, duration_sec)
     log(f"  Script: {len(script.split())} words")
 
     # Update Airtable with script

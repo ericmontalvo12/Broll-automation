@@ -68,8 +68,10 @@ def load_config(airtable_token: str) -> dict:
         "blotato_api_key": fields.get("Blotato API Key", ""),
         "google_drive_folder_id": fields.get("Google Drive Folder ID", ""),
         "pexels_api_key": fields.get("Pexels API Key", ""),
+        "apify_api_key": fields.get("Apify API Key", ""),
         "table_broll": fields.get("Table B-Roll ID", ""),
         "table_performance": fields.get("Table Performance ID", ""),
+        "ig_competitors": fields.get("IG Competitors", ""),
 
         # Blotato Account IDs
         "youtube_account_id": fields.get("YouTube Account ID", ""),

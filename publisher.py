@@ -47,27 +47,30 @@ Return format:
 
 
 def generate_captions(config: dict, script: str, source_text: str) -> dict:
-    """Generate platform-specific captions using GPT-4.1-mini."""
-    url = "https://api.openai.com/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {config['openai_api_key']}",
-        "Content-Type": "application/json"
-    }
-    body = {
-        "model": "gpt-4.1-mini",
-        "messages": [
-            {"role": "system", "content": CAPTION_SYSTEM_PROMPT},
+    """Generate platform-specific captions using Claude."""
+    import anthropic
+
+    api_key = config.get("anthropic_api_key", "")
+    if not api_key:
+        raise ValueError("No Claude API key found in config")
+
+    client = anthropic.Anthropic(api_key=api_key)
+
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=2048,
+        system=CAPTION_SYSTEM_PROMPT,
+        messages=[
             {"role": "user", "content": (
                 f"{script}\n\n{source_text}\n\n"
                 "Make this into SEO optimized objects for each platform. "
                 "For the Youtube Title, make sure to add the update name as the first word(s). "
-                "NEVER use Hashtags"
+                "NEVER use Hashtags\n\n"
+                "Return ONLY valid JSON, no other text."
             )}
-        ],
-        "response_format": {"type": "json_object"}
-    }
-    result = api_request(url, body, method="POST", headers=headers)
-    content = result["choices"][0]["message"]["content"]
+        ]
+    )
+    content = response.content[0].text
     return json.loads(content)
 
 
