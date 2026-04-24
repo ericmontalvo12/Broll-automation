@@ -347,19 +347,27 @@ FORBIDDEN:
 - Never make up statistics or cite numbers you are not confident are real
 
 PEAK PERFORMANCE INGREDIENTS — USE THESE WHEN RELEVANT:
-You know exactly what is in Peak Performance. When the topic connects to one of these ingredients, reference it specifically by name. Do not force it — only include it if it fits naturally. Aim to feature 1 ingredient per script.
+You know exactly what is in Peak Performance. When the script topic DIRECTLY connects to an ingredient, reference it by name at the end as the natural solution.
+
+STRICT RULES FOR INGREDIENT MENTIONS:
+- The connection must be DIRECT and OBVIOUS — not a chain of logic. If you need more than one step to connect the topic to the ingredient, do NOT include it.
+- BAD example: Script is about sleep → "sleep raises cortisol → KSM-66 reduces cortisol" — this is two steps, do not do this.
+- GOOD example: Script is about cortisol → "KSM-66 reduces cortisol" — this is one direct step.
+- GOOD example: Script is about sleep → "Magnesium supports sleep quality and is directly linked to testosterone" — direct.
+- If no ingredient connects directly to the topic, skip it entirely. A clean script with no ingredient mention is better than a forced one.
+- Only mention 1 ingredient per script, at the end, as the logical conclusion.
 
 1. KSM-66 ASHWAGANDHA (500mg)
    Mechanism: Reduces cortisol. High cortisol directly suppresses testosterone production.
    Proven stat: Clinical trials show 14-17% testosterone increase.
    Script angle: "High cortisol is silently killing your testosterone. KSM-66 Ashwagandha is clinically shown to reduce cortisol AND increase testosterone by up to 17% in human trials."
-   Best for topics: stress, cortisol, sleep, recovery
+   Best for topics: stress, chronic cortisol, cortisol and testosterone — NOT sleep unless the script is specifically about cortisol from poor sleep
 
 2. TONGKAT ALI (200:1 Extract, 300mg)
    Mechanism: Stimulates release of free testosterone from SHBG. Also lowers cortisol.
    Proven stat: 37% testosterone increase, 16% cortisol reduction in a 4-week controlled study.
    Script angle: "37% more testosterone in 4 weeks. Tongkat Ali works two ways — it stimulates free testosterone release from SHBG and lowers cortisol."
-   Best for topics: free testosterone, SHBG, hormonal optimization
+   Best for topics: free testosterone, SHBG, bound vs free testosterone
 
 3. BORON CITRATE (9mg)
    Mechanism: Reduces SHBG so more testosterone stays free and active. Also reduces estradiol.
@@ -371,25 +379,25 @@ You know exactly what is in Peak Performance. When the topic connects to one of 
    Mechanism: Required for testosterone synthesis at the cellular level. Deficiency directly lowers T.
    Proven stat: Zinc deficiency is directly correlated with low testosterone.
    Script angle: "Your body literally cannot produce testosterone without zinc. Most men who train hard are depleted through sweat and don't know it."
-   Best for topics: diet, nutrition, minerals, training
+   Best for topics: diet, nutrition, zinc-rich foods, mineral deficiency, training nutrition
 
 5. MAGNESIUM BISGLYCINATE (30mg)
-   Mechanism: Direct positive correlation between magnesium levels and free testosterone.
+   Mechanism: Direct positive correlation between magnesium levels and free testosterone. Also supports sleep quality.
    Proven stat: Athletes lose magnesium through sweat; higher magnesium = higher T.
    Script angle: "Studies show a direct link between magnesium levels and testosterone. The more you train, the more you sweat it out."
-   Best for topics: training, recovery, minerals, sleep
+   Best for topics: sleep and testosterone, recovery, mineral depletion through training
 
 6. VITAMIN D3 (Cholecalciferol, 3,000 IU)
    Mechanism: Functions as a hormone precursor, not just a vitamin. Deficiency linked to low T.
    Proven stat: 12-month RCT showed significant increases in total, free, and bioactive testosterone vs placebo.
    Script angle: "A year-long clinical trial found men supplementing with D3 had significantly higher total AND free testosterone than the placebo group. It's not a vitamin. It's a hormone precursor."
-   Best for topics: sunlight, deficiency, indoor training, winter
+   Best for topics: sunlight, vitamin D deficiency, indoor lifestyle, seasonal T drops
 
 7. FENUGREEK (50% Saponins, 500mg)
    Mechanism: Inhibits the enzyme that converts testosterone to estrogen (aromatase inhibition).
    Proven stat: 2020 meta-analysis of multiple clinical trials confirmed effectiveness.
    Script angle: "Your body converts testosterone into estrogen through an enzyme. Fenugreek blocks that conversion — keeping more testosterone in circulation."
-   Best for topics: estrogen, aromatase, hormonal balance
+   Best for topics: estrogen, aromatase, testosterone conversion, hormonal balance
 
 
 
@@ -900,7 +908,7 @@ def generate_script(config: dict, category: str, duration_sec: float, at=None) -
             max_tokens=2048,
             system=system_prompt,
             messages=[
-                {"role": "user", "content": f"Write a powerful testosterone-focused script for a {category} video. If any Peak Performance ingredient is relevant to this topic, weave it in naturally — reference the specific ingredient name, the mechanism, and the clinical evidence."}
+                {"role": "user", "content": f"Write a powerful testosterone-focused script for a {category} video. Only mention a Peak Performance ingredient at the end if it directly and obviously solves the exact problem the script is about — one step, no logical leaps. If the connection is not direct, leave it out entirely."}
             ]
         )
         log(f"  SUCCESS: Claude generated script")
