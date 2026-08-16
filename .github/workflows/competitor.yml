@@ -1,0 +1,39 @@
+name: Competitor Scraper
+
+on:
+  schedule:
+    - cron: '0 14 * * *'  # 10am EST (2pm UTC) — once daily
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: windows-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+
+      - name: Install dependencies
+        run: pip install requests anthropic certifi
+
+      - name: Run competitor scraper
+        env:
+          AIRTABLE_PERSONAL_ACCESS_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+          BLOTATO_API_KEY: ${{ secrets.BLOTATO_API_KEY }}
+          BLOTATO_TIKTOK_ACCOUNT_ID: ${{ secrets.BLOTATO_TIKTOK_ACCOUNT_ID }}
+          BLOTATO_INSTAGRAM_ACCOUNT_ID: ${{ secrets.BLOTATO_INSTAGRAM_ACCOUNT_ID }}
+          AUTO_POST_PLATFORMS: ${{ secrets.AUTO_POST_PLATFORMS }}
+          COMPETITOR_API_PROVIDER: ${{ secrets.COMPETITOR_API_PROVIDER }}
+          COMPETITOR_API_KEY: ${{ secrets.COMPETITOR_API_KEY }}
+          COMPETITOR_TIKTOK_HANDLES: ${{ secrets.COMPETITOR_TIKTOK_HANDLES }}
+          COMPETITOR_INSTAGRAM_HANDLES: ${{ secrets.COMPETITOR_INSTAGRAM_HANDLES }}
+          COMPETITOR_VIRAL_THRESHOLD: ${{ secrets.COMPETITOR_VIRAL_THRESHOLD }}
+        run: python competitor_scraper.py

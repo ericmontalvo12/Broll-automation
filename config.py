@@ -87,6 +87,14 @@ def load_config(airtable_token: str) -> dict:
         # Auto-posting
         "auto_post_platforms": fields.get("Auto Post Platforms", ""),
 
+        # Competitor scraper
+        "competitor_api_provider": fields.get("Competitor API Provider", "apify"),
+        "competitor_api_key": fields.get("Competitor API Key", ""),
+        "competitor_tiktok_handles": fields.get("Competitor TikTok Handles", ""),
+        "competitor_instagram_handles": fields.get("Competitor Instagram Handles", ""),
+        "competitor_viral_threshold": fields.get("Competitor Viral Threshold", "10000"),
+        "competitor_max_per_handle": fields.get("Competitor Max Per Handle", "20"),
+
         # Telegram
         "telegram_token": fields.get("Telegram Access Token", ""),
         "telegram_chat_id": fields.get("Telegram Chat ID", ""),

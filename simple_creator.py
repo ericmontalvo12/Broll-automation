@@ -1044,18 +1044,21 @@ def download_pexels_video(api_key, video_id, output_path):
 
 # ── Main Pipeline ────────────────────────────────────────────────────────────
 
-def run_creator(config: dict, category: str = None):
+def run_creator(config: dict, category: str = None, competitor_script: str = None):
     at = AirtableClient(config)
     videos_dir = Path(config["videos_dir"])
     videos_dir.mkdir(exist_ok=True)
-    
-    log("=== B-Roll Creator: Starting ===")
-    
+
+    if competitor_script:
+        log("=== B-Roll Creator: Starting (competitor-inspired) ===")
+    else:
+        log("=== B-Roll Creator: Starting ===")
+
     pexels_key = config.get("pexels_api_key", "")
     if not pexels_key:
         log("ERROR: No Pexels API key")
         return None
-    
+
     # Step 1: Pick category
     if not category:
         category = random.choice(list(PEXELS_SEARCH_TERMS.keys()))
@@ -1135,16 +1138,25 @@ def run_creator(config: dict, category: str = None):
     
     # Step 4: Create Airtable record
     log("--- Creating record ---")
+    record_name = (
+        f"Competitor - {category.title()} - {datetime.now().strftime('%m/%d %H:%M')}"
+        if competitor_script
+        else f"{category.title()} - {datetime.now().strftime('%m/%d %H:%M')}"
+    )
     create_record = at.create_record(config["table_create"], {
-        "Name": f"{category.title()} - {datetime.now().strftime('%m/%d %H:%M')}",
+        "Name": record_name,
         "Status": "Review",
         "Category": category,
     })
     record_id = create_record["id"]
-    
+
     # Step 5: Generate script (on-screen text + caption)
     log("--- Generating script ---")
-    full_script = generate_script(config, category, duration, at)
+    if competitor_script:
+        full_script = competitor_script
+        log("  Using competitor-inspired script")
+    else:
+        full_script = generate_script(config, category, duration, at)
     on_screen_text, caption_text = parse_script_and_caption(full_script)
     log(f"  On-screen: {on_screen_text[:60]}...")
     if caption_text:
